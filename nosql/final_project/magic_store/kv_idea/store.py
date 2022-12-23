@@ -40,6 +40,7 @@ class Store:
             self._createEvent('createUser', message=message['description'])
             return message
 
+
     def login(self, username, password):
         if username in self._users.keys():
             if self._users.get(username) == password:
@@ -58,7 +59,7 @@ class Store:
 
 
     def __init__(self):
-        self._store = {"__default__": {}}
+        self._store = {"__tags__": {}}
         self._currentNamespace = None
         self._events = {}
         self._createEvent('init')
@@ -66,7 +67,8 @@ class Store:
         self._users = {'admin':'admin'}
         #here will be dict username:usertype
         self.users = {'admin':'admin'}
-        self.currentUser = 'admin'
+        self.currentUser = 'admin'  
+
 
 
     def createNamespace(self, namespace):
@@ -74,7 +76,7 @@ class Store:
             message = MESSAGES.INCORRECT_PERMISSION
             self._createEvent('createNamespace', message=message['description'])
             return message
-        if namespace == "__default__":
+        if namespace == "__tags__":
             message = MESSAGES.INCORRECT_NAMESPACE
             self._createEvent('createNamespace', message=message['description'])
             return message
@@ -85,8 +87,12 @@ class Store:
         self._createEvent('createNamespace', message=message['description'])
         return message
 
+        
+    def _createTag(self, tag):
+        self._store['__tags__'][tag] = {}
 
-    def put(self, key, value, *, namespace = None, guard = None):
+
+    def put(self, key, value, namespace = None, guard = None, tags = []):
         if not self._checkPermission('put'):
             message = MESSAGES.INCORRECT_PERMISSION
             self._createEvent('put', message=message['description'])
@@ -118,6 +124,10 @@ class Store:
                 return message
         else:
             self._store[namespace][key] = {"guard": uuid.uuid4().hex, "value": value}
+        for tag in tags:
+            if not tag in self._store['__tags__']:
+                self._createTag(tag)
+            self._store['__tags__'][tag][namespace] = {key:True}
         message = MESSAGES.OK
         self._createEvent('put', message=message['description'])
         return message
@@ -188,7 +198,6 @@ class Store:
 
         if key in self._store[namespace]:
             v = self._store[namespace][key]
-
             if v["guard"] == guard:
                 del self._store[namespace][key]
                 message = MESSAGES.OK
@@ -230,14 +239,27 @@ class Store:
         return message
 
 
+    def saveEvents(self):
+        if not self._checkPermission('saveEvents'):
+            message = MESSAGES.INCORRECT_PERMISSION
+            self._createEvent('saveEvents', message=message['description'])
+            return message
+        message = MESSAGES.OK
+        self._createEvent('saveEvents', message=message['description'])
+        with open('events.log','w') as f:
+            for k, v in self._events.items():
+                f.write(f'{k} {v}\n')
+        return message
+
+
     def _checkNamespace(self, namespace):
-        if namespace == "__default__":
+        if namespace == "__tags__":
             return None
         elif namespace == None:
             if not self._currentNamespace == None:
                 return self._currentNamespace
             else:
-                return "__default__"
+                return "__tags__"
         return namespace
 
 
@@ -246,3 +268,4 @@ class Store:
             return True
         else:
             return False
+    

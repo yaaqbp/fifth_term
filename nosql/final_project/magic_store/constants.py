@@ -34,6 +34,7 @@ class EVENTS:
         'init', 
         'load', 
         'save', 
+        'saveEvents',
         'delete',
         'login'
         ]
