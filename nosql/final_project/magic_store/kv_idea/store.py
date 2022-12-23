@@ -1,9 +1,15 @@
 import json
 import uuid
 from datetime import datetime
-from ..constants import MESSAGES, EVENTS
+from ..constants import MESSAGES, EVENTS, USERS
 
 class Store:
+    def _checkPermission(self, event_type):
+        if event_type in USERS.PERMISSIONS.get(self.currentUser):
+            return True
+        return False
+
+
     def _createEvent(self, event_type, message = None):
         if event_type in EVENTS.TYPES:
             now = datetime.now().isoformat()
@@ -12,27 +18,80 @@ class Store:
             else:
                 self._events.update({now:event_type+'-'+message})
 
+
+    def createUser(self, usertype: str, username: str, password: str):
+        if not self._checkPermission('createUser'):
+            message = MESSAGES.INCORRECT_PERMISSION
+            self._createEvent('createUser', message=message['description'])
+            return message
+        if usertype in USERS.PERMISSIONS.keys() and usertype != 'admin':
+            if username not in self._users.keys():
+                self._users.update({username:password})
+                self.users.update({username:usertype})
+                message = MESSAGES.OK
+                self._createEvent('createUser', message=message['description'])
+                return message
+            else:
+                message = MESSAGES.INCORRECT_USERNAME
+                self._createEvent('createUser', message=message['description'])
+                return message
+        else:
+            message = MESSAGES.INCORRECT_USERTYPE
+            self._createEvent('createUser', message=message['description'])
+            return message
+
+    def login(self, username, password):
+        if username in self._users.keys():
+            if self._users.get(username) == password:
+                self.currentUser = username
+                message = MESSAGES.OK
+                self._createEvent('login', message=message['description'])
+                return message
+            else:
+                message = MESSAGES.INCORRECT_PASSWORD
+                self._createEvent('login', message=message['description'])
+                return message
+        else:
+            message = MESSAGES.INCORRECT_USERNAME
+            self._createEvent('login', message=message['description'])
+            return message
+
+
     def __init__(self):
         self._store = {"__default__": {}}
         self._currentNamespace = None
         self._events = {}
         self._createEvent('init')
+        #here will be dict username:password
+        self._users = {'admin':'admin'}
+        #here will be dict username:usertype
+        self.users = {'admin':'admin'}
+        self.currentUser = 'admin'
+
 
     def createNamespace(self, namespace):
+        if not self._checkPermission('createNamespace'):
+            message = MESSAGES.INCORRECT_PERMISSION
+            self._createEvent('createNamespace', message=message['description'])
+            return message
         if namespace == "__default__":
             message = MESSAGES.INCORRECT_NAMESPACE
             self._createEvent('createNamespace', message=message['description'])
             return message
 
         self._store[namespace] = {}
+        self._currentNamespace = namespace
         message = MESSAGES.OK
         self._createEvent('createNamespace', message=message['description'])
         return message
 
 
     def put(self, key, value, *, namespace = None, guard = None):
+        if not self._checkPermission('put'):
+            message = MESSAGES.INCORRECT_PERMISSION
+            self._createEvent('put', message=message['description'])
+            return message
         namespace = self._checkNamespace(namespace)
-
         if namespace == None:
             message = MESSAGES.INCORRECT_NAMESPACE
             self._createEvent('put', message=message['description'])
@@ -65,6 +124,10 @@ class Store:
 
 
     def get(self, key, *, namespace = None):
+        if not self._checkPermission('get'):
+            message = MESSAGES.INCORRECT_PERMISSION
+            self._createEvent('get', message=message['description'])
+            return message
         namespace = self._checkNamespace(namespace)
 
         if namespace == None:
@@ -82,12 +145,10 @@ class Store:
             self._createEvent('get', message=message['description'])
             return message
 
-
         if not (key in self._store[namespace]):
             message = MESSAGES.INCORRECT_KEY
             self._createEvent('get', message=message['description'])
             return message
-
 
         value = None
         if isinstance(self._store[namespace][key]["value"], dict) or \
@@ -96,52 +157,80 @@ class Store:
         else:
             value = self._store[namespace][key]["value"]
 
-        return MESSAGES.ok(
+        message = MESSAGES.ok(
             value,
             self._store[namespace][key]["guard"]
         )
+        self._createEvent('get', message=message['description'])
+        return message
 
 
     def delete(self, key, *, namespace = None, guard = None):
+        if not self._checkPermission('delete'):
+            message = MESSAGES.INCORRECT_PERMISSION
+            self._createEvent('delete', message=message['description'])
+            return message
         namespace = self._checkNamespace(namespace)
-
         if namespace == None:
-            return MESSAGES.INCORRECT_NAMESPACE
+            message = MESSAGES.INCORRECT_NAMESPACE
+            self._createEvent('delete', message=message['description'])
+            return message
 
         if not(isinstance(key, str) and len(key)>0):
-            return MESSAGES.INCORRECT_TYPE
+            message = MESSAGES.INCORRECT_TYPE
+            self._createEvent('delete', message=message['description'])
+            return message
 
         if not (namespace in self._store):
-            return MESSAGES.INCORRECT_NAMESPACE
+            message = MESSAGES.INCORRECT_NAMESPACE
+            self._createEvent('delete', message=message['description'])
+            return message
 
         if key in self._store[namespace]:
             v = self._store[namespace][key]
 
             if v["guard"] == guard:
                 del self._store[namespace][key]
-                return MESSAGES.OK
+                message = MESSAGES.OK
+                self._createEvent('delete', message=message['description'])
+                return message
             else:
-                return MESSAGES.INCORRECT_GUARD
+                message = MESSAGES.INCORRECT_GUARD
+                self._createEvent('delete', message=message['description'])
+                return message
         else:
-            return MESSAGES.INCORRECT_KEY
+            message = MESSAGES.INCORRECT_KEY
+            self._createEvent('delete', message=message['description'])
+            return message
 
 
     def save(self):
+        if not self._checkPermission('save'):
+            message = MESSAGES.INCORRECT_PERMISSION
+            self._createEvent('save', message=message['description'])
+            return message
         file = open("db.json","w")
         json.dump(self._store, file)
         file.close()
-        return MESSAGES.OK
+        message = MESSAGES.OK
+        self._createEvent('save', message=message['description'])
+        return message
 
 
     def load(self):
+        if not self._checkPermission('load'):
+            message = MESSAGES.INCORRECT_PERMISSION
+            self._createEvent('load', message=message['description'])
+            return message
         file = open("db.json","r")
         self._store = json.load(file)
         file.close()
-        return MESSAGES.OK
+        message = MESSAGES.OK
+        self._createEvent('load', message=message['description'])
+        return message
 
 
     def _checkNamespace(self, namespace):
-
         if namespace == "__default__":
             return None
         elif namespace == None:
@@ -149,8 +238,8 @@ class Store:
                 return self._currentNamespace
             else:
                 return "__default__"
-
         return namespace
+
 
     def _guardKVArgs(self, key, value):
         if isinstance(key, str) and len(key)>0:
