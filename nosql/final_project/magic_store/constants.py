@@ -8,6 +8,7 @@ class MESSAGES:
     INCORRECT_USERTYPE_CODE = 211
     INCORRECT_PASSWORD_CODE = 213
     INCORRECT_PERMISSION_CODE = 215
+    INCORRECT_TAG_CODE = 217
 
     OK = {"code": OK_CODE, "description": "OK"}
     INCORRECT_NAMESPACE = {"code": INCORRECT_NAMESPACE_CODE, "description": "Incorrect_(nonexisting)_namespace"}
@@ -18,39 +19,34 @@ class MESSAGES:
     INCORRECT_USERTYPE = {"code": INCORRECT_USERTYPE_CODE, "description": "Incorrect_usertype"}
     INCORRECT_PASSWORD = {"code": INCORRECT_PASSWORD_CODE, "description": "Incorrect_password"}
     INCORRECT_PERMISSION = {"code": INCORRECT_PERMISSION_CODE, "description": "Incorrect_permission"}
+    INCORRECT_TAG = {"code": INCORRECT_TAG_CODE, "description": "Incorrect_tag"}
     @classmethod
-    def ok(cls, value, guard):
+    def ok(cls, value, guard=None):
         result = cls.OK.copy()
         result["value"] = value
-        result["guard"] = guard
+        if guard is not None:
+            result["guard"] = guard
         return result
 
 class EVENTS:
     TYPES = [
         'put',
         'get',
+        'delete',
+        'login',
+        'searchByTag',
         'createNamespace',
         'createUser',
-        'init', 
         'load', 
         'save', 
         'saveEvents',
-        'delete',
-        'login'
+        'init', 
         ]
 
 class USERS:
     PERMISSIONS = {
         'admin': EVENTS.TYPES,
-        'superuser':[
-            'put',
-            'get',
-            'delete',
-            'createNamespace',
-        ],
-        'user':[
-            'put',
-            'get'
-        ],
+        'superuser':EVENTS.TYPES[:6],
+        'user':EVENTS.TYPES[:2],
         'guest':[]
     }

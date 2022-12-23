@@ -41,7 +41,7 @@ class Store:
             return message
 
 
-    def login(self, username, password):
+    def login(self, username: str, password: str):
         if username in self._users.keys():
             if self._users.get(username) == password:
                 self.currentUser = username
@@ -70,8 +70,7 @@ class Store:
         self.currentUser = 'admin'  
 
 
-
-    def createNamespace(self, namespace):
+    def createNamespace(self, namespace: str):
         if not self._checkPermission('createNamespace'):
             message = MESSAGES.INCORRECT_PERMISSION
             self._createEvent('createNamespace', message=message['description'])
@@ -92,7 +91,7 @@ class Store:
         self._store['__tags__'][tag] = {}
 
 
-    def put(self, key, value, namespace = None, guard = None, tags = []):
+    def put(self, key: str, value: str, namespace = None, guard = None, tags = []):
         if not self._checkPermission('put'):
             message = MESSAGES.INCORRECT_PERMISSION
             self._createEvent('put', message=message['description'])
@@ -127,13 +126,16 @@ class Store:
         for tag in tags:
             if not tag in self._store['__tags__']:
                 self._createTag(tag)
-            self._store['__tags__'][tag][namespace] = {key:True}
+            if namespace not in self._store['__tags__'][tag]:
+                self._store['__tags__'][tag][namespace] = {key:True}
+            else:
+                self._store['__tags__'][tag][namespace][key] = True
         message = MESSAGES.OK
         self._createEvent('put', message=message['description'])
         return message
 
 
-    def get(self, key, *, namespace = None):
+    def get(self, key: str, *, namespace = None):
         if not self._checkPermission('get'):
             message = MESSAGES.INCORRECT_PERMISSION
             self._createEvent('get', message=message['description'])
@@ -175,7 +177,7 @@ class Store:
         return message
 
 
-    def delete(self, key, *, namespace = None, guard = None):
+    def delete(self, key: str, *, namespace = None, guard = None):
         if not self._checkPermission('delete'):
             message = MESSAGES.INCORRECT_PERMISSION
             self._createEvent('delete', message=message['description'])
@@ -211,6 +213,34 @@ class Store:
             message = MESSAGES.INCORRECT_KEY
             self._createEvent('delete', message=message['description'])
             return message
+
+
+
+    def searchByTag(self, tag: str, namespace=None):
+        if not self._checkPermission('delete'):
+            message = MESSAGES.INCORRECT_PERMISSION
+            self._createEvent('searchByTag', message=message['description'])
+            return message
+        namespace = self._checkNamespace(namespace)
+        if namespace == None or namespace == '__tags__' or not (namespace in self._store):
+            message = MESSAGES.INCORRECT_NAMESPACE
+            self._createEvent('searchByTag', message=message['description'])
+            return message
+
+        if not(isinstance(tag, str) and len(tag)>0):
+            message = MESSAGES.INCORRECT_TYPE
+            self._createEvent('searchByTag', message=message['description'])
+            return message
+
+        if not (tag in self._store['__tags__']):
+            message = MESSAGES.INCORRECT_TAG
+            self._createEvent('searchByTag', message=message['description'])
+            return message
+
+        dct = {key:True for key in self._store['__tags__'][tag][namespace].keys()}
+        message = MESSAGES.ok(dct)
+        self._createEvent('searchByTag', message=message['description'])
+        return message
 
 
     def save(self):
@@ -268,4 +298,7 @@ class Store:
             return True
         else:
             return False
-    
+"""
+    def showPermissons(self):
+        return USERS.PERMISSIONS[self.currentUser]
+    """
