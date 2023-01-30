@@ -300,6 +300,108 @@ class Store:
             return True
         else:
             return False
+
+    def addTag(self, tag: str, key: str, namespace=None):
+        if not self._checkPermission('addTag'):
+            message = MESSAGES.INCORRECT_PERMISSION
+            self._createEvent('addTag', message=message['description'])
+            return message
+        namespace = self._checkNamespace(namespace)
+      
+        if namespace == None:
+            message = MESSAGES.INCORRECT_NAMESPACE
+            self._createEvent('addTag', message=message['description'])
+            return message
+
+        if not(isinstance(tag, str) and len(tag)>0):
+            message = MESSAGES.INCORRECT_TYPE
+            self._createEvent('addTag', message=message['description'])
+            return message
+
+        if not(isinstance(key, str) and len(key)>0):
+            message = MESSAGES.INCORRECT_TYPE
+            self._createEvent('addTag', message=message['description'])
+            return message
+  
+        if not (namespace in self._store):
+            message = MESSAGES.INCORRECT_NAMESPACE
+            self._createEvent('addTag', message=message['description'])
+            return message
+        
+        if not (key in self._store[namespace]):
+            message = MESSAGES.INCORRECT_KEY
+            self._createEvent('addTag', message=message['description'])
+            return message
+        
+        if not (tag in self._store['__tags__']):
+            self._store['__tags__'][tag] = {}
+
+        if not (namespace in self._store['__tags__'][tag]):
+            self._store['__tags__'][tag][namespace] = {}
+       
+        self._store['__tags__'][tag][namespace][key] = True
+        message = MESSAGES.OK
+        self._createEvent('addTag', message=message['description'])
+        return message
+
+    def removeTag(self, tag: str, key: str, namespace=None):
+        if not self._checkPermission('removeTag'):
+            message = MESSAGES.INCORRECT_PERMISSION
+            self._createEvent('removeTag', message=message['description'])
+            return message
+        namespace = self._checkNamespace(namespace)
+      
+        if namespace == None:
+            message = MESSAGES.INCORRECT_NAMESPACE
+            self._createEvent('removeTag', message=message['description'])
+            return message
+
+        if not(isinstance(tag, str) and len(tag)>0):
+            message = MESSAGES.INCORRECT_TYPE
+            self._createEvent('removeTag', message=message['description'])
+            return message
+
+        if not(isinstance(key, str) and len(key)>0):
+            message = MESSAGES.INCORRECT_TYPE
+            self._createEvent('removeTag', message=message['description'])
+            return message
+  
+        if not (namespace in self._store):
+            message = MESSAGES.INCORRECT_NAMESPACE
+            self._createEvent('removeTag', message=message['description'])
+            return message
+        
+        if not (key in self._store[namespace]):
+            message = MESSAGES.INCORRECT_KEY
+            self._createEvent('removeTag', message=message['description'])
+            return message
+        
+        if not (tag in self._store['__tags__']):
+            message = MESSAGES.INCORRECT_TAG
+            self._createEvent('removeTag', message=message['description'])
+            return message
+
+        if not (namespace in self._store['__tags__'][tag]):
+            message = MESSAGES.INCORRECT_NAMESPACE
+            self._createEvent('removeTag', message=message['description'])
+            return message
+
+        if not (key in self._store['__tags__'][tag][namespace]):
+            message = MESSAGES.INCORRECT_KEY
+            self._createEvent('removeTag', message=message['description'])
+            return message
+
+        del self._store['__tags__'][tag][namespace][key]
+        message = MESSAGES.OK
+        self._createEvent('removeTag', message=message['description'])
+        return message
+
+
+
+
+
+
+
 """
     def showPermissons(self):
         return USERS.PERMISSIONS[self.currentUser]

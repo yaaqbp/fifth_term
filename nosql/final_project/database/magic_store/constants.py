@@ -35,6 +35,8 @@ class EVENTS:
         'searchByTag'
         'delete',
         'login',
+        'addTag',
+        'removeTag',
         'createNamespace',
         'createUser',
         'load', 
@@ -46,10 +48,8 @@ class EVENTS:
 class USERS:
     PERMISSIONS = {
         'admin': EVENTS.TYPES,
-        'superuser':EVENTS.TYPES[:6],
+        'superuser':EVENTS.TYPES[:8],
         'user':EVENTS.TYPES[:3],
         'guest':[]
     }
 
-users = USERS()
-print(type(users.PERMISSIONS['admin']))

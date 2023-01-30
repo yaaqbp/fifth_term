@@ -2,7 +2,6 @@ from .magic_store.kv_idea.store import Store
 import json
 import xmltodict
 
-
 class Database:
     def __init__(self, username, password):
         self.username = username
@@ -49,9 +48,21 @@ class Database:
             docs.append(doc)
         return docs
 
-    def addTag(self, filepath, tag):
-        pass
+    def addTag(self, key, tag):
+        try: 
+            self.store.addTag(tag = tag, key = key, namespace = self.username)
+            print('tag added')
+        except:
+            print('Something went wrong')
+            return 0
+
+    def removeTag(self, key, tag):
+        try:
+            self.store.removeTag(tag = tag, key = key, namespace = self.username)
+            print('tag removed')
+        except:
+            print('Something went wrong')
+            return 0
 
 
-    def removeTag(self, filepath, tag):
-        pass
+
